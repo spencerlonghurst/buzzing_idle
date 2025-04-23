@@ -109,55 +109,58 @@ export class Start extends Phaser.Scene {
     // }
 
     create() {
-        const tileWidth = 65;
-        const tileHeight = 89;
+        const tileWidth = 56;   // match your asset size
+        const tileHeight = 55;  // adjust to your hex's height
+        const worldCenterX = 2500; // Half of your setBounds width
+        const worldCenterY = 2500; // Half of your setBounds height
 
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
         const axialToPixel = (q, r) => {
-            const x = tileWidth * 0.75 * q;
-            const y = tileHeight * (r + 0.5 * (q & 1));
+            const x = tileWidth * (q + r / 2);
+            const y = tileHeight * r * 0.75;
             return { x, y };
         };
 
         this.hive = {
             radius: 0,
-            center: { x: centerX, y: centerY },
-            tileMap: {} // map of 'q,r' => tile
+            center: { x: worldCenterX, y: worldCenterY },
+            tileMap: {}
         };
 
         const revealTile = (q, r) => {
             const key = `${q},${r}`;
-            if (this.hive.tileMap[key]) return; // already exists
+            if (this.hive.tileMap[key]) return;
 
             const { x, y } = axialToPixel(q, r);
-            const screenX = centerX + x;
-            const screenY = centerY + y;
+            const worldX = this.hive.center.x + x;
+            const worldY = this.hive.center.y + y;
 
-            const tile = this.add.image(screenX, screenY, 'dirtHex');
+            const tile = this.add.image(worldX, worldY, 'dirtHex');
             this.hive.tileMap[key] = tile;
         };
 
-        // 🔹 Reveal center tile
+
+        // Place center tile
         revealTile(0, 0);
 
-        // 🔹 Expand button
+        // Add expand button
         this.add.text(50, 50, 'Expand Hive', {
-            fontSize: '24px',
+            fontSize: '20px',
             fill: '#fff',
-            backgroundColor: '#333',
-            padding: { x: 10, y: 5 }
+            backgroundColor: '#444',
+            padding: { x: 10, y: 6 }
         })
+            .setScrollFactor(0)
             .setInteractive()
             .on('pointerdown', () => {
                 this.hive.radius += 1;
                 const radius = this.hive.radius;
 
-                // Spiral ring generation
                 const directions = [
-                    [1, 0], [0, 1], [-1, 1],
-                    [-1, 0], [0, -1], [1, -1]
+                    [1, 0], [1, -1], [0, -1],
+                    [-1, 0], [-1, 1], [0, 1]
                 ];
 
                 let q = directions[4][0] * radius;
@@ -171,8 +174,47 @@ export class Start extends Phaser.Scene {
                         r += dr;
                     }
                 }
+
+                const padding = 200;
+                const mapRadiusPx = tileWidth * (this.hive.radius + 1);
+
+                // this.cameras.main.setBounds(
+                //     centerX - mapRadiusPx - padding,
+                //     centerY - mapRadiusPx - padding,
+                //     mapRadiusPx * 2 + padding * 2,
+                //     mapRadiusPx * 2 + padding * 2
+                // );
+
             });
+
+        this.cameras.main.setBounds(0, 0, 5000, 5000); // start big
+        this.input.keyboard.createCursorKeys();
+
+        this.cameras.main.scrollX = worldCenterX - this.cameras.main.width / 2;
+        this.cameras.main.scrollY = worldCenterY - this.cameras.main.height / 2;
+
+
+        this.input.on('pointerdown', (pointer) => {
+            this.input.dragStartX = pointer.x;
+            this.input.dragStartY = pointer.y;
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (!pointer.isDown) return;
+
+            const dragX = pointer.x - this.input.dragStartX;
+            const dragY = pointer.y - this.input.dragStartY;
+
+            this.cameras.main.scrollX -= dragX;
+            this.cameras.main.scrollY -= dragY;
+
+            this.input.dragStartX = pointer.x;
+            this.input.dragStartY = pointer.y;
+        });
+
+
     }
+
 
 
 
@@ -246,6 +288,16 @@ export class Start extends Phaser.Scene {
         // this.background.tilePositionX += 16;
         // bee.x += 1;
         // this.bee.x += 0.1
+
+        const cursors = this.input.keyboard.createCursorKeys();
+        const cam = this.cameras.main;
+
+        const speed = 10;
+        if (cursors.left.isDown) cam.scrollX -= speed;
+        if (cursors.right.isDown) cam.scrollX += speed;
+        if (cursors.up.isDown) cam.scrollY -= speed;
+        if (cursors.down.isDown) cam.scrollY += speed;
+
     }
 
 }
