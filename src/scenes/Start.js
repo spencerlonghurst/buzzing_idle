@@ -124,9 +124,13 @@ export class Start extends Phaser.Scene {
         };
 
         this.hive = {
-            radius: 0,
+            radius: 1,
             center: { x: worldCenterX, y: worldCenterY },
-            tileMap: {}
+            tileMap: {},
+            currentRing: {
+                side: 0,     // side index (0 to 5)
+                index: 0     // tile index along side (0 to radius-1)
+            }
         };
 
         const revealTile = (q, r) => {
@@ -155,37 +159,54 @@ export class Start extends Phaser.Scene {
             .setScrollFactor(0)
             .setInteractive()
             .on('pointerdown', () => {
-                this.hive.radius += 1;
                 const radius = this.hive.radius;
+                const { side, index } = this.hive.currentRing;
+                // console.log('side', side)
+                console.log('index', index)
 
                 const directions = [
-                    [1, 0], [1, -1], [0, -1],
-                    [-1, 0], [-1, 1], [0, 1]
+                    [1, 0],
+                    [1, -1],
+                    [0, -1],
+                    [-1, 0],
+                    [-1, 1],
+                    [0, 1]
                 ];
 
-                let q = directions[4][0] * radius;
-                let r = directions[4][1] * radius;
+                // Start at initial tile on the ring edge (3 o'clock position)
+                let horizontal = directions[4][0] * radius;
+                let vertical = directions[4][1] * radius;
+                // console.log('top horizontal', horizontal)
+                // console.log('top vertical', vertical)
 
-                for (let side = 0; side < 6; side++) {
-                    const [dq, dr] = directions[side];
-                    for (let i = 0; i < radius; i++) {
-                        revealTile(q, r);
-                        q += dq;
-                        r += dr;
-                    }
+                // Walk forward to the start of the current side
+                for (let s = 0; s < side; s++) {
+                    horizontal += directions[s][0] * radius;
+                    vertical += directions[s][1] * radius;
                 }
 
-                const padding = 200;
-                const mapRadiusPx = tileWidth * (this.hive.radius + 1);
+                // Walk forward `index` tiles along the current side
+                horizontal += directions[side][0] * index;
+                vertical += directions[side][1] * index;
 
-                // this.cameras.main.setBounds(
-                //     centerX - mapRadiusPx - padding,
-                //     centerY - mapRadiusPx - padding,
-                //     mapRadiusPx * 2 + padding * 2,
-                //     mapRadiusPx * 2 + padding * 2
-                // );
+                // console.log(horizontal, vertical);
+                revealTile(horizontal, vertical);
 
+                // Advance the side/index
+                this.hive.currentRing.index += 1;
+                if (this.hive.currentRing.index >= radius) {
+                    this.hive.currentRing.index = 0;
+                    this.hive.currentRing.side += 1;
+                }
+
+                // Finished all 6 sides? Start next ring
+                if (this.hive.currentRing.side >= 6) {
+                    this.hive.radius += 1;
+                    this.hive.currentRing.side = 0;
+                    this.hive.currentRing.index = 0;
+                }
             });
+
 
         this.cameras.main.setBounds(0, 0, 5000, 5000); // start big
         this.input.keyboard.createCursorKeys();
