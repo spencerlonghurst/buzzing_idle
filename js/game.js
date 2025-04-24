@@ -1,8 +1,10 @@
-export class Start extends Phaser.Scene {
-
-    constructor() {
-        super('Start');
-    }
+let game = new Phaser.Class({
+    Extems: Phaser.Scene,
+    initialize: function zoneScene() {
+        Phaser.Scene.call(this, {
+            key: "game",
+        });
+    },
 
     preload() {
         // this.load.image('background', 'assets/space.png');
@@ -14,7 +16,7 @@ export class Start extends Phaser.Scene {
         // this.load.spritesheet('ship', 'assets/spaceship.png', { frameWidth: 176, frameHeight: 96 });
 
         this.load.spritesheet('bee', 'assets/bee.png', { frameWidth: 240, frameHeight: 240 });
-    }
+    },
 
     // This is a working hard coded version
     // create() {
@@ -234,7 +236,7 @@ export class Start extends Phaser.Scene {
         });
 
 
-    }
+    },
 
 
 
@@ -321,4 +323,4 @@ export class Start extends Phaser.Scene {
 
     }
 
-}
+})
